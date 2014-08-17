@@ -1,0 +1,1220 @@
+<html>
+
+<head>
+
+
+<title>Universidad Nacional Autónoma de México</title>
+
+<script type="text/javascript" src="jscharts.js"></script>
+
+
+	<script>
+//recibe numero de plato y regresa el indice para el array
+	function indJ(j){
+			reg = j-1;
+			return reg;
+	}
+// recibe el numero de plato y devuelve la temperatura
+	function T(j){
+		return arrayT[j];
+	}
+
+//recibe el numero de plato y devuelve el flujo V
+	function V(j){
+		if(j == 7){
+			return 0;
+		}else{
+		return arrayV[j];
+		}
+	}
+	
+// recibe el componente y regresa el flujo de alimentacion del liquido
+	function infLiq(n){
+		var arrayInfLiq = [,0,0,0,0.05,0.78,164.17];
+		if(n == -1){
+			var suma = 0;
+			for( var i = 1; i <= NC ; i++){
+				suma += arrayInfLiq[i];
+			}
+			return suma;
+		}else{
+			return arrayInfLiq[n]
+		}
+	}
+// recibe el componente y regresa el flujo de alimentacion del gas
+	function infGas(n){
+		var arrayInfGas = [,160,370,240,25,5,0];
+		if(n == -1){
+			var suma = 0;
+			for( var i = 1; i <= NC ; i++){
+				suma += arrayInfGas[i];
+			}
+			return suma;
+		}else{
+			return arrayInfGas[n]
+		}
+	}
+// Recibe el componente y regresa la composicion de la alimentacion del liquido
+	function compInfLiq(n){
+		var comp = infLiq(n) / infLiq(-1);
+		return comp;
+	}
+// Recibe el componente y regresa la composicion de la alimentacion del gas
+	function compInfGas(n){
+		var comp = infGas(n) / infGas(-1);
+		return comp;
+	}
+// recibe el numero de plato y regresa el flujo F 
+	function F(j){
+		return arrayF[j];
+	}
+// recibe el componente y plato y devuelve la coposición de F
+	function zij(i,j){
+		if(j == 1){
+			return compInfLiq(i);
+		}
+		if(j == 6){
+			return compInfGas(i);
+		}
+		else{
+			return 0;
+		}
+	}
+// recibe el numero de componente y el numero de plato y regresa  k
+	function kij(i,j){
+		var ALFA = [,4.35,0.65,0.15,0.0375,0.0105,1.42*Math.pow(10,-5)];
+		var BETA = [,2.542*Math.pow(10,-2),8.183*Math.pow(10,-3),2.383*Math.pow(10,-3),5.725*Math.pow(10,-4),2.692*Math.pow(10,-4),3.64*Math.pow(10,-7)];
+		var GAMA = [,-2.0*Math.pow(10,-5),2.25*Math.pow(10,-5),2.35*Math.pow(10,-5),1.075*Math.pow(10,-5),2.55*Math.pow(10,-6),3.44*Math.pow(10,-9)];
+		var DELTA = [,8.333*Math.pow(10,-9),-2.333*Math.pow(10,-8),-2.333*Math.pow(10,-8),-2.5*Math.pow(10,-10),1.108*Math.pow(10,-8),1.50*Math.pow(10,-11)];
+		
+		var k = ALFA[i]+BETA[i]*T(j)+GAMA[i]*Math.pow(T(j),2)+DELTA[i]*Math.pow(T(j),3);
+		return k;
+	}
+// recibe el numero de componente y el numero de plato y regresa la ENTALPIA del VAPOR Hv
+	function Hvij(i,j){
+		var ALFA = [,1604,4661,5070,5231,5411,8000];
+		var BETA = [,9.357,15.54,26.45,33.9,42.09,74.67];
+		var GAMA = [,1.782*Math.pow(10,-3),3.341*Math.pow(10,-3),0,5.812*Math.pow(10,-3),8.017*Math.pow(10,-3),3.556*Math.pow(10,-2)];
+		
+		var hv = ALFA[i]+BETA[i]*T(j)+GAMA[i]*Math.pow(T(j),2);
+		return hv;
+	}
+// recibe el numero de componente y el numero de plato y regresa la ENTALPIA del LIQUIDO Hl
+	function Hlij(i,j){
+		var ALFA = [,0,0,0,0,0,0];
+		var BETA = [,14.17,16.54,22.78,31.97,39.68,69.33];
+		var GAMA = [,-1.782*Math.pow(10,-3),3.341*Math.pow(10,-3),4.899*Math.pow(10,-3),5.812*Math.pow(10,-3),8.017*Math.pow(10,-3),3.556*Math.pow(10,-2)];
+		
+		var hl = ALFA[i]+BETA[i]*T(j)+GAMA[i]*Math.pow(T(j),2);
+		return hl;
+	}
+//recibe el numero de componente y el numero de plato y regresa el calculo de las A para los platos diferentes de cero
+	function Aij(i,j){
+		var suma = 0;
+		for(var m = 1; m < j ;m++){
+			suma += F(m);
+		}
+		var A = V(j) + suma - V(1);
+		return A;
+	}
+//recibe el numero de componente y el numero de plato y regresa el calculo de las B para todos los platos
+	function Bij(i,j){
+		var suma = 0;
+		for(var m = 1; m <= j ;m++){
+			suma += F(m);
+		}
+		var B = -(V(j+1) + suma - V(1)+ V(j)*kij(i,j));
+		return B;
+	}
+//recibe el numero de componente y el numero de plato y regresa el calculo de las C para los platos diferentes de cero
+	function Cij(i,j){	
+		var C = V(j+1)*kij(i,j+1);
+		return C;
+	}
+//recibe el numero de componente y el numero de plato y regresa el calculo de las D 
+	function Dij(i,j){
+		var D = -F(j)*zij(i,j);
+		return D;
+	}
+
+// conjunto de funciones para realizar el metodo de Thomas solucion de la matriz tridiagonal
+	// recibe el numero de componente y numero de plato y regresa el calculo de P (plato "cero" es cero....)
+		function calculaP(i,j){
+			var P;			
+			P = Cij(i,j) / ( Bij(i,j) - Aij(i,j)* arrayP[i][j-1]);				
+			return P;
+		}
+		// para usar la funcion P en calculos
+			function Pij(i,j){
+				return arrayP[i][j];
+			}
+	// calcula q (para los platos existentes) esta funcion no se debe emplear para hacer calculos solo inicializa
+		function calculaQ(i,j){
+			var Q;			
+			Q = ( Dij(i,j) - Aij(i,j) * Qij(i,j-1) ) / ( Bij(i,j) - Aij(i,j)* Pij(i,j-1));				
+			return Q;
+		}
+		// para usar la funcion Q en calculos
+			function Qij(i,j){
+				return arrayQ[i][j];
+			}
+// Xij
+	function Xij(i,j){
+		return arrayX[i][j];
+	}	
+//calcula L recibe el numero de plato regresa L
+	function calculaLj(j){
+		var suma = 0;
+		for(var m = 1; m <= j ;m++){
+			suma += F(m);
+		}
+		var L = V(j+1) + suma - V(1);
+		return L;
+	}
+//L para calculos
+	function Lj(j){
+		 return arrayL[j];
+	}
+
+//suma las X de el plato j
+	function sumaXj(j){
+		var sumax = 0;
+		for (var i = 1; i <= NC; i++){
+			sumax += Xij(i,j);
+		}
+		return sumax;
+	}
+// calcula Vnueva del plato j
+	function Vnuevaj(j){
+		var suma = 0;
+		for(var m = j; m <= N ;m++){
+			suma += F(m);
+		}
+		var V = Lj(j-1) - Lj(N) + suma;
+		return V;
+	}
+// Y para calculos 
+	function Yij(i,j){
+		var Y = arrayY[i][j];
+		return Y;
+	}
+//suma las Y de el plato j
+	function sumaYj(j){
+		var sumay = 0;
+		for (var i = 1; i <= NC; i++){
+			sumay += Yij(i,j);
+		}
+		return sumay;
+	}
+// recibe el numero de componente y el numero de plato y regresa Hv 
+	function parcialHvij(i,j){
+		var ALFA = [,1604,4661,5070,5231,5411,8000];
+		var BETA = [,9.357,15.54,26.45,33.9,42.09,74.67];
+		var GAMA = [,1.782*Math.pow(10,-3),3.341*Math.pow(10,-3),0,5.812*Math.pow(10,-3),8.017*Math.pow(10,-3),3.556*Math.pow(10,-2)];
+		
+		var hv = BETA[i]+2*GAMA[i]*T(j);
+		return hv;
+	}
+// recibe el numero de componente y el numero de plato y regresa Hl 
+	function parcialHlij(i,j){
+		var ALFA = [,0,0,0,0,0,0];
+		var BETA = [,14.17,16.54,22.78,31.97,39.68,69.33];
+		var GAMA = [,-1.782*Math.pow(10,-3),3.341*Math.pow(10,-3),4.899*Math.pow(10,-3),5.812*Math.pow(10,-3),8.017*Math.pow(10,-3),3.556*Math.pow(10,-2)];
+		
+		var hl = BETA[i]+2*GAMA[i]*T(j);
+		return hl;
+	}
+//  calculaDHvj(j)
+	function calculaDHvj(j){
+		var suma = 0;
+		for (var i = 1; i <= NC; i++){
+			suma += parcialHvij(i,j)*Yij(i,j);
+		}
+		return suma;
+	}
+//  calculaDHlj(j)
+	function calculaDHlj(j){
+		var suma = 0;
+		for (var i = 1; i <= NC; i++){
+			suma += parcialHlij(i,j)*Xij(i,j);
+		}
+		return suma;
+	}
+//  calculaHVj(j)
+	function calculaHVj(j){
+		var suma = 0;
+		for (var i = 1; i <= NC; i++){
+			suma += Hvij(i,j)*Yij(i,j);
+		}
+		return suma;
+	}
+//  calculaHLj(j)
+	function calculaHLj(j){
+		var suma = 0;
+		for (var i = 1; i <= NC; i++){
+			suma += Hlij(i,j)*Xij(i,j);
+		}
+		return suma;
+	}
+//  calculaHFj(j)
+	function calculaHFj(j){
+		var suma = 0;
+			if(j == 1){
+				for (var i = 1; i <= NC; i++){
+					suma += Hlij(i,14)*zij(i,j);
+				}
+			}
+			if(j == 6){
+				for (var i = 1; i <= NC; i++){
+					suma += Hvij(i,15)*zij(i,j);
+				}
+			}
+		return suma;
+	}	
+// Para operaciones DHvj
+	function DHvj(j){
+		return arrayDHvj[j];
+	}
+// Para operaciones DHlj
+	function DHlj(j){
+		return arrayDHlj[j];
+	}
+// Para operaciones HVj
+	function HVj(j){
+		return arrayHVj[j];
+	}	
+// Para operaciones HLj
+	function HLj(j){
+		return arrayHLj[j];
+	}	
+// Para operaciones HFj
+	function HFj(j){
+		return arrayHFj[j];
+	}	
+// AEj
+	function AEj(j){
+		return arrayAEj[j];
+	}
+// BEj
+	function BEj(j){
+		return arrayBEj[j];
+	}
+// GEj
+	function GEj(j){
+		return arrayGEj[j];
+	}
+// HEj
+	function HEj(j){
+		return arrayHEj[j];
+	}
+// conjunto de funciones para realizar el metodo de Thomas solucion de la matriz tridiagonal de energia
+	// recibe el numero de componente y numero de plato y regresa el calculo de PE (plato "cero" es cero....)
+		function calculaPE(j){
+			var PE;			
+			PE = GEj(j) / ( BEj(j) - AEj(j)* arrayPE[j-1]);				
+			return PE;
+		}
+		// para usar la funcion PE en calculos
+			function PEj(j){
+				return arrayPE[j];
+			}
+	// calcula q (para los platos existentes) esta funcion no se debe emplear para hacer calculos solo inicializa
+		function calculaQE(j){
+			var QE;			
+			QE = ( -HEj(j) - AEj(j) * QEj(j-1) ) / ( BEj(j) - AEj(j)* PEj(j-1));				
+			return QE;
+		}
+		// para usar la funcion Q en calculos
+			function QEj(j){
+				return arrayQE[j];
+			}
+	// difTempj
+		function difTempj(j){
+			return arrayDifTemp[j];
+		}
+		
+	//para imprimir esteticamente
+		function imprimirNum(num){
+			if(num == 0){
+				return 0;
+			}else if(Math.abs(num.toFixed(0)) > 100){
+				return num.toFixed(1);
+			}else if(Math.abs(num.toFixed(3)) > 0){
+				return num.toFixed(3);
+			}else{
+				return num.toFixed(5);
+			}
+			
+		}
+	</script>
+</head>
+
+
+
+<body>
+<div align ='center'>
+	<h1>Universidad Nacional Autónoma de México </h1>
+</div>
+<br>
+<div align = 'left'>
+	Hugo Redon Rivera
+</div>
+<img src= 'torre de absorción.jpg'>
+<div id="graph">Loading...</div>
+<br><br>
+<div id="graph2">Loading...</div>
+<br><br>
+<div id="graph3">Loading...</div>
+<br><br>
+<div id="graph4">Loading...</div>
+<br><br>
+<div id="graph5">Loading...</div>
+<br><br>
+
+<script type="text/javascript">
+
+
+//Inicializamos variables
+
+//numero de platos
+	var N = 6;
+//numero de componentes
+	var NC = 6;
+//temperatura inicializa a 90 todas las temperaturas
+	var arrayT = new Array(N+1);
+		arrayT[14]= 90;
+		arrayT[15]= 105;
+		/*for(var i = 1; i <= N; i++){
+			arrayT[i] = 90;
+		}	*/
+		arrayT[1] = parseInt(prompt('Estimado inicial T (°C) de la etapa 1',90));
+		arrayT[2] = parseInt(prompt('Estimado inicial T (°C) de la etapa 2',100));
+		arrayT[3] = parseInt(prompt('Estimado inicial T (°C) de la etapa 3',110));
+		arrayT[4] = parseInt(prompt('Estimado inicial T (°C) de la etapa 4',120));
+		arrayT[5] = parseInt(prompt('Estimado inicial T (°C) de la etapa 5',130));
+		arrayT[6] = parseInt(prompt('Estimado inicial T (°C) de la etapa 6',140));
+// V inicializa a 100 todas los flujos V		
+	var arrayV = new Array(N + 1);
+		/*for(var i = 1; i <= N ; i++){
+			arrayV[i] = 500;
+		}*/
+		// pide el flujo de vapor que sale de cada etapa este estimado puede ser igual para cada etapa
+		var primerEstimadoV = parseInt(prompt('Estimado inicial V [gmol / h]',600));
+		arrayV[1] = primerEstimadoV;
+		arrayV[2] = primerEstimadoV;
+		arrayV[3] = primerEstimadoV;
+		arrayV[4] = primerEstimadoV;
+		arrayV[5] = primerEstimadoV;
+		arrayV[6] = primerEstimadoV;
+		
+//inicializa el array F
+	var arrayF = new Array(N + 1);
+	// F donde solo el primero y ultimo tienen valor dif de cero
+			arrayF[1] = infLiq(-1);
+			for(var i = 2; i <= N-1; i++){
+				arrayF[i] = 0;
+			}
+			arrayF[N] = infGas(-1);
+// inicializa matriz A 
+	var arrayA = new Array(NC + 1);	
+	for (var i = 1 ; i <= NC ; i++){
+		arrayA[i] = new Array(N+1);
+	}
+// inicializa matriz B  
+	var arrayB = new Array(NC+1);
+	for (var i = 1 ; i <= NC ; i++){
+		arrayB[i] = new Array(N + 1);
+	}
+// inicializa matriz C 
+	var arrayC = new Array(NC+1);
+	for (var i = 1 ; i <= NC ; i++){
+		arrayC[i] = new Array(N+1);
+	}
+// inicializa matriz D  
+	var arrayD = new Array(NC+1);
+	for (var i = 1 ; i <= NC ; i++){
+		arrayD[i] = new Array(N+1);
+	}
+// inicializaP  
+	var arrayP = new Array(NC+1);
+	for (var i = 1 ; i <= NC ; i++){
+		arrayP[i] = new Array(N+1);
+	}
+// incializa Q 
+	var arrayQ = new Array(NC+1);
+	for (var i = 1 ; i <= NC ; i++){
+		arrayQ[i] = new Array(N+1);
+	}
+// Inicializa matriz x
+	var arrayX = new Array(NC + 1);
+	for (var i = 1 ; i <= NC ; i++){
+		arrayX[i] = new Array(N+1);
+	}
+//inicializa matriz L
+	var arrayL = new Array(NC + 1);
+// inicializamos L nueva
+	var arrayLNueva = new Array(NC +1);
+//inicializamos Vnueva
+	var arrayVnueva = new Array(NC +1 );
+//inicializamos X normalizadas
+	var arrayXNorm = new Array(NC +1);
+	for (var i = 1; i <= NC; i++){
+		arrayXNorm[i] = new Array(N+1);
+	}
+//inicializamos Y
+	var arrayY = new Array(NC+1);
+	for( var i = 1; i <= NC; i++){
+		arrayY[i] = new Array(N+1);
+	}
+//inicializamos Y normalizadas
+	var arrayYNorm = new Array(NC +1);
+	for (var i = 1; i <= NC; i++){
+		arrayYNorm[i] = new Array(N+1);
+	}
+// inicializamos arrayDHvj
+	var arrayDHvj = new Array(N+1);
+// inicializamos arrayDHlj
+	var arrayDHlj = new Array(N+1);
+// inicializamos arrayHVj
+	var arrayHVj = new Array(N+1);
+// inicializamos arrayHLj
+	var arrayHLj = new Array(N+1);
+// inicializamos arrayHFj
+	var arrayHFj = new Array(N+1);
+// inicializamos AEj
+	var arrayAEj = new Array(N+1);
+// inicializamos BEj
+	var arrayBEj = new Array(N+1);
+// inicializamos GEj
+	var arrayGEj = new Array(N+1);
+// inicializamos HEj
+	var arrayHEj = new Array(N+1);
+//inicializamos PE
+	var arrayPE = new Array(N+1);
+//inicializamos QE
+	var arrayQE = new Array(N+1);
+// inicializamos dif temp
+	var arrayDifTemp = new Array(N+1);
+//inicializamos arrayTNueva
+	var arrayTNueva = new Array(N+1);
+// criterio de convergencia
+	var criterio;
+	var contador=0;
+	
+	
+	
+
+	
+	do{
+		
+	//A donde para cada componente en el plato 1, A es igual a cero
+		for (var i = 1 ; i <= NC ; i++){
+			arrayA[i][1] = 0;
+			for ( var j = 2; j <= N; j++){
+				arrayA[i][j] = Aij(i,j);
+			}
+		}
+	//B
+		for (var i = 1 ; i <= NC ; i++){
+			for ( var j = 1; j <= N; j++){
+				arrayB[i][j] = Bij(i,j);
+			}
+		}
+		//C donde en el plato 6, C es igual a cero
+			for (var i = 1 ; i <= NC ; i++){
+				arrayC[i][N] = 0;
+				for ( var j = 1; j < N; j++){
+					arrayC[i][j] = Cij(i,j);
+				}
+			}
+	//D
+		for (var i = 1 ; i <= NC ; i++){
+			for ( var j = 1; j <= N; j++){
+				arrayD[i][j] = Dij(i,j);
+			}
+		}
+// Método de Thomas
+	//calcula la matriz P, no hay P en el plato 6!!!!!!! y es cero en el plato "cero"....
+			for (var i = 1 ; i <= NC ; i++){
+				arrayP[i][0] = 0;
+				arrayP[i][N] =0;
+				for (var j = 1; j < N; j++){
+					arrayP[i][j] = calculaP(i,j);
+				}
+			}
+	//Q calcula la matriz q y es cero en el plato "cero"....
+			for (var i = 1 ; i <= NC ; i++){
+				arrayQ[i][0] = 0;
+				for (var j = 1; j <= N; j++){
+					arrayQ[i][j] = calculaQ(i,j);
+				}
+			}
+	//resolvemos X
+			for (var i = 1 ; i <= NC ; i++){
+				arrayX[i][N+1] = 0;
+				for ( var j = N; j > 0 ; j--){
+					arrayX[i][j] = Qij(i,j) - Pij(i,j)*Xij(i,j+1);
+				}
+			}		
+		
+		
+	// resolvemos L
+			arrayL[0] = 0;
+			for (var j = 1; j <= N ; j++){
+				arrayL[j] = calculaLj(j);
+			}
+	//L nueva
+		for(var j = 1 ; j <= N; j++){
+			arrayLNueva[j] = Lj(j)*sumaXj(j);
+		}
+	// reemplazamos arrayL por Lnueva
+		for(var j = 1 ; j <= N; j++){
+			arrayL[j]= arrayLNueva[j];
+		}
+	//V nueva
+		for(var j = 1; j<= N; j++){
+			arrayVnueva[j] = Vnuevaj(j);
+		}
+	// reemplazamos V por Vnueva
+		for(var j = 1; j<= N; j++){
+			arrayV[j] = arrayVnueva[j];
+		}
+		
+		
+		
+	// normalizamos X en XNorm
+		for (var i = 1; i <= NC; i++){
+			for(var j = 1; j <= N; j++){	
+				arrayXNorm[i][j] = (arrayX[i][j]/ sumaXj(j));
+			}
+		}
+	// reemplazamos X por X Normalizada
+		for (var i = 1; i <= NC; i++){
+			for(var j = 1; j <= N; j++){	
+				arrayX[i][j] = arrayXNorm[i][j];
+			}
+		}
+	// calculamos Y
+		for( var i = 1; i <= NC; i++){
+			for(var j = 1; j <= N; j++){
+				arrayY[i][j]= kij(i,j)* Xij(i,j);
+			}
+		}
+	// normalizamos Y en YNorm
+		for (var i = 1; i <= NC; i++){
+			for(var j = 1; j <= N; j++){	
+				arrayYNorm[i][j] = (arrayY[i][j]/ sumaYj(j));
+			}
+		}
+	// reemplazamos Y por Y Normalizada
+		for (var i = 1; i <= NC; i++){
+			for(var j = 1; j <= N; j++){	
+				arrayY[i][j] = arrayYNorm[i][j];
+			}
+		}	
+	//calculamos arrayDHvj
+		for(var j = 1;j <=N ; j++){
+			arrayDHvj[j] = calculaDHvj(j);
+		}
+	//calculamos arrayDHlj
+		for(var j = 1;j <=N ; j++){
+			arrayDHlj[j] = calculaDHlj(j);
+		}	
+	// calculamos arrayHVj
+		arrayHVj[N+1] = 0;
+		for(var j = 1;j <=N ; j++){
+			arrayHVj[j] = calculaHVj(j);
+		}
+	// calculamos arrayHLj
+		arrayHLj[0] = 0;
+		for(var j = 1;j <=N ; j++){
+			arrayHLj[j] = calculaHLj(j);
+		}
+	// calculamos arrayHFj	
+		for(var j = 1;j <=N ; j++){
+			arrayHFj[j] = calculaHFj(j);
+		}
+	// calculamos AEj
+		arrayAEj[1]=0;
+		for (var j = 2; j<= N ; j++){
+			arrayAEj[j]= Lj(j-1)*DHlj(j-1);
+		}	
+	// calculamos BEj
+		for (var j = 1; j<= N ; j++){
+			arrayBEj[j]= -Lj(j)*DHlj(j) - V(j)*DHvj(j);
+		}		
+	// calculamos GEj
+		arrayGEj[N]=0;
+		for (var j = 1; j<= N-1 ; j++){
+			arrayGEj[j]=V(j+1)*DHvj(j+1);
+		}		
+	// calculamos HEj
+		for (var j = 1; j<= N ; j++){
+			arrayHEj[j]= Lj(j-1) * HLj(j-1) + V(j+1) * HVj(j+1) + F(j) * HFj(j) - Lj(j) * HLj(j) - V(j) * HVj(j);
+		}		
+// Metodo de thomas Energia
+	//calcula PE, no hay PE en el plato 6!!!!!!! y es cero en el plato "cero"....
+				arrayPE[0] = 0;
+				arrayPE[N] =0;
+				for (var j = 1; j < N; j++){
+					arrayPE[j] = calculaPE(j);
+				}			
+	//calcula QE y es cero en el plato "cero"....			
+				arrayQE[0] = 0;
+				for (var j = 1; j <= N; j++){
+					arrayQE[j] = calculaQE(j);
+				}						
+	//resolvemos arrayDifTemp			
+				arrayDifTemp[N+1] = 0;
+				for ( var j = N; j > 0 ; j--){
+					arrayDifTemp[j] = QEj(j) - PEj(j)*difTempj(j+1);
+				}
+	// calculamos T nueva
+	 for(var j = 1; j <= N ; j++){
+		arrayTNueva[j] = difTempj(j) + T(j);
+	 }
+		
+	// asignamos nuevas temperaturas 
+	 for( var j = 1; j <= N ; j++){
+		
+		arrayT[j] = arrayTNueva[j];
+		
+	}	
+		
+	for( var j = 1; j<= N ; j++){
+		criterio = Math.pow(difTempj(j),2);
+	}
+	//criterio = Math.abs(arrayDifTemp[1]);
+	
+			
+	contador++;		
+	}while( criterio > 0.0001);
+	
+	
+	// Publicación de resultados
+//Publica criterio de convergencia y numero de iteraciones
+	document.writeln("<table align = 'center' valign = 'middle' frame = box>");
+	document.write("<tr bgcolor = '4682B4' >");
+	document.write("<td> Criterio de convergencia </td>");
+	document.write("<td> Numero de iteraciones </td>");
+	document.write("</tr>");
+	document.write("<tr>");
+	document.write("<td align = 'center'>" + imprimirNum(criterio)+ "</td>");
+	document.write("<td align = 'center'> "+ contador +" </td>");
+	document.write("</tr></table> <br>");
+	
+	
+	
+// publica matriz "Vnueva","Tnueva","DifTemp"
+var matriz1 = ["F","V","L","T"];
+var unidad = ["[lb-mol / h]","[lb-mol / h]","[lb-mol / h]","[°F]"];
+var componente = [,"Metano","Etano","Propano","n-Butano","n-Pentano","Aceite Absorbente"];
+
+document.writeln("<table align = 'center' valign = 'middle' frame = box>");
+
+document.write("<tr bgcolor = '4682B4' >");
+document.writeln("<td> </td>");
+for( var m = 0; m < matriz1.length ; m++){ 
+		document.write("<th align = 'center' ><font color = 'white'>" +    matriz1[m] + " " + unidad[m] + "</font></th>");
+}	
+	document.write("</tr>");
+	
+		for( var j = 1; j <= N; j++){
+			document.write("<tr>");
+			document.write("<td align = 'center'> j = " + j + "</td>");
+			for( var m = 0; m < matriz1.length ; m++){
+				
+				document.write("<td align = 'center'>" + eval("imprimirNum(array" + matriz1[m] + "[j])") + "</td>");
+			}
+			document.write("</tr>");
+		}
+document.writeln("</table ><br>");
+
+
+// publica matriz "X","Y","A","B","C","D","P","Q"
+var matriz = ["X","Y","A","B","C","D","P","Q"];
+var unidad2 = ["","","[lb-mol / h]","[lb-mol / h]","[lb-mol / h]","[lb-mol / h]","",""];
+
+document.writeln("<table align = 'center' valign = 'middle' frame = box>");
+
+for( var m = 0; m < matriz.length ; m++){ 
+	document.write("<tr bgcolor = '4682B4' >");
+	document.write("<th colspan = 7><font color = 'white'>" +    matriz[m] + " " + unidad2[m] +   "</font></th>");
+	document.write("</tr>");
+	document.write("<tr>");
+		document.write("<td > </td>");
+		for( var j = 1; j <= N; j++){
+			document.write("<td align = 'center'> j = " + j + "</td>");
+		}
+	document.write("</tr>");
+	for(var i = 1; i <= NC ; i++){
+		document.write("<tr>");
+		document.write("<td align = 'center'>  " + componente[i] + "</td>");
+		for(var j = 1; j<= N; j++){
+				document.write("<td align = 'center'>" + eval("imprimirNum(array" + matriz[m] + "[i][j])") + "</td>");
+			}
+		document.write("</tr>");
+	}
+	
+}
+document.writeln("</table >");
+
+
+
+// publica matriz "PE","QE","AEj","BEj","GEj","HEj"
+var matriz2 = ["PE","QE","AEj","BEj","GEj","HEj","DifTemp"];
+var unidad3 = ["","","[Btu / h °F]","[Btu / h °F]","[Btu / h °F]","[Btu/h]","[°F]"];
+
+document.writeln("<table align = 'center' valign = 'middle' frame = box>");
+
+document.write("<tr bgcolor = '4682B4' >");
+document.writeln("<td> </td>");
+for( var m = 0; m < matriz2.length ; m++){ 
+		document.write("<th ><font color = 'white'>" +    matriz2[m] + " "+ unidad3[m] +  "</font></th>");
+}
+	document.write("</tr>");
+	
+		for( var j = 1; j <= N; j++){
+			document.write("<tr>");
+			document.write("<td align = 'center'> j = " + j + "</td>");
+			for( var m = 0; m < matriz2.length ; m++){
+				
+				document.write("<td align = 'center'>" + eval("imprimirNum(array" + matriz2[m] + "[j])") + "</td>");
+			}
+			document.write("</tr>");
+		}
+document.writeln("</table >");
+
+// Publica propiedades HLj HVj HFj DHvj DHlj kij
+
+var matriz3 = ["HLj","HVj","HFj","DHvj","DHlj"];
+var unidad4 = ["[Btu/ lb-mol]","[Btu/ lb-mol]","[Btu/ lb-mol]","[Btu/ °F lb-mol]","[Btu/ °F lb-mol]"];
+
+document.writeln("<table align = 'center' valign = 'middle' frame = box>");
+
+document.write("<tr bgcolor = '4682B4' >");
+document.writeln("<td> </td>");
+for( var m = 0; m < matriz3.length ; m++){ 
+		document.write("<th ><font color = 'white'>" +    matriz3[m] + " " + unidad3[m] + "</font></th>");
+}
+	document.write("</tr>");
+	
+		for( var j = 1; j <= N; j++){
+			document.write("<tr>");
+			document.write("<td align = 'center'> j = " + j + "</td>");
+			for( var m = 0; m < matriz3.length ; m++){
+				
+				document.write("<td align = 'center'>" + eval("imprimirNum(" + matriz3[m] + "(j))") + "</td>");
+			}
+			document.write("</tr>");
+		}
+document.writeln("</table >");
+
+
+
+//Graficos
+
+//composición en la fase liquida
+	var colores = ["blue","green","gray","olive","pink","magenta"];
+	var myChart = new JSChart('graph', 'line');
+	var cG1 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG1[j-1] = [j, Xij(1,j) ];
+		}
+	var cG2 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG2[j-1] = [j, Xij(2,j) ];
+		}
+	var cG3 = new Array(NC);
+	for(var j = 1; j<= N ; j++){
+		cG3[j-1] = [j, Xij(3,j) ];
+	}
+	var cG4 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG4[j-1] = [j, Xij(4,j) ];
+		}
+	var cG5 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG5[j-1] = [j, Xij(5,j) ];
+		}
+	var cG6 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG6[j-1] = [j, Xij(6,j) ];
+		}
+	
+	myChart.setDataArray( cG1, colores[0]);
+	myChart.setDataArray( cG2, colores[1]);
+	myChart.setDataArray( cG3, colores[2]);
+	myChart.setDataArray( cG4, colores[3]);
+	myChart.setDataArray( cG5, colores[4]);
+	myChart.setDataArray( cG6, colores[5]);
+	
+	myChart.setSize(900, 400);
+	myChart.setAxisValuesNumberY(5);
+	myChart.setIntervalStartY(0);
+	myChart.setIntervalEndY(1);
+	myChart.setLabelX([1,'1']);
+	myChart.setLabelX([2,'2']);
+	myChart.setLabelX([3,'3']);
+	myChart.setLabelX([4,'4']);
+	myChart.setLabelX([5,'5']);
+	myChart.setLabelX([6,'6']);
+	myChart.setAxisValuesNumberX(6);
+	myChart.setShowXValues(false);
+	myChart.setTitleColor('#454545');
+	myChart.setAxisNameX('Etapa');
+	myChart.setAxisNameY('X');
+	myChart.setTitle('Composición en la fase líquida');
+	myChart.setAxisValuesColor('#454545');
+	myChart.setLineColor('#A4D314', 'green');
+	myChart.setLineColor('#BBBBBB', 'gray');
+	myChart.setLineColor('#FFC0CB', 'pink');
+	myChart.setLineColor('#0000FF', 'blue');
+	myChart.setLineColor('#FF00FF', 'magenta');
+	myChart.setLineColor('#808000', 'olive');
+	myChart.setTooltip([1,' ']);
+	myChart.setTooltip([2,' ']);
+	myChart.setTooltip([3,' ']);
+	myChart.setTooltip([4,' ']);
+	myChart.setTooltip([5,' ']);
+	myChart.setTooltip([6,' ']);
+	myChart.setTooltip([7,' ']);
+	myChart.setTooltip([8,' ']);
+	myChart.setTooltip([9,' ']);
+	myChart.setTooltip([10,' ']);
+	myChart.setFlagColor('#9D16FC');
+	myChart.setFlagRadius(0);
+	myChart.setAxisPaddingRight(100);
+	myChart.setLegendShow(true);
+	myChart.setLegendPosition(490, 80);
+	myChart.setLegendForLine('blue', componente[1]);
+	myChart.setLegendForLine('green', componente[2]);
+	myChart.setLegendForLine('gray', componente[3]);
+	myChart.setLegendForLine('olive', componente[4]);
+	myChart.setLegendForLine('pink', componente[5]);
+	myChart.setLegendForLine('magenta', componente[6]);
+	myChart.draw();
+	
+//composición en la fase gas
+	var colores = ["blue","green","gray","olive","pink","magenta"];
+	var myChart2 = new JSChart('graph2', 'line');
+	var cG1 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG1[j-1] = [j, Yij(1,j) ];
+		}
+	var cG2 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG2[j-1] = [j, Yij(2,j) ];
+		}
+	var cG3 = new Array(NC);
+	for(var j = 1; j<= N ; j++){
+		cG3[j-1] = [j, Yij(3,j) ];
+	}
+	var cG4 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG4[j-1] = [j, Yij(4,j) ];
+		}
+	var cG5 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG5[j-1] = [j, Yij(5,j) ];
+		}
+	var cG6 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG6[j-1] = [j, Yij(6,j) ];
+		}
+	
+	myChart2.setDataArray( cG1, colores[0]);
+	myChart2.setDataArray( cG2, colores[1]);
+	myChart2.setDataArray( cG3, colores[2]);
+	myChart2.setDataArray( cG4, colores[3]);
+	myChart2.setDataArray( cG5, colores[4]);
+	myChart2.setDataArray( cG6, colores[5]);
+	
+	myChart2.setSize(900, 400);
+	myChart2.setAxisValuesNumberY(5);
+	myChart2.setIntervalStartY(0);
+	myChart2.setIntervalEndY(1);
+	myChart2.setLabelX([1,'1']);
+	myChart2.setLabelX([2,'2']);
+	myChart2.setLabelX([3,'3']);
+	myChart2.setLabelX([4,'4']);
+	myChart2.setLabelX([5,'5']);
+	myChart2.setLabelX([6,'6']);
+	myChart2.setAxisValuesNumberX(6);
+	myChart2.setShowXValues(false);
+	myChart2.setTitleColor('#454545');
+	myChart2.setAxisNameX('Etapa');
+	myChart2.setAxisNameY('Y');
+	myChart2.setTitle('Composición en la fase gas');
+	myChart2.setAxisValuesColor('#454545');
+	myChart2.setLineColor('#A4D314', 'green');
+	myChart2.setLineColor('#BBBBBB', 'gray');
+	myChart2.setLineColor('#FFC0CB', 'pink');
+	myChart2.setLineColor('#0000FF', 'blue');
+	myChart2.setLineColor('#FF00FF', 'magenta');
+	myChart2.setLineColor('#808000', 'olive');
+	myChart2.setTooltip([1,' ']);
+	myChart2.setTooltip([2,' ']);
+	myChart2.setTooltip([3,' ']);
+	myChart2.setTooltip([4,' ']);
+	myChart2.setTooltip([5,' ']);
+	myChart2.setTooltip([6,' ']);
+	myChart2.setTooltip([7,' ']);
+	myChart2.setTooltip([8,' ']);
+	myChart2.setTooltip([9,' ']);
+	myChart2.setTooltip([10,' ']);
+	myChart2.setFlagColor('#9D16FC');
+	myChart2.setFlagRadius(0);
+	myChart2.setAxisPaddingRight(100);
+	myChart2.setLegendShow(true);
+	myChart2.setLegendPosition(490, 80);
+	myChart2.setLegendForLine('blue', componente[1]);
+	myChart2.setLegendForLine('green', componente[2]);
+	myChart2.setLegendForLine('gray', componente[3]);
+	myChart2.setLegendForLine('olive', componente[4]);
+	myChart2.setLegendForLine('pink', componente[5]);
+	myChart2.setLegendForLine('magenta', componente[6]);
+	myChart2.draw();
+
+	//Flujo de gas en funcion del No. de etapa
+	var colores = ["blue","green","gray","olive","pink","magenta"];
+	var myChart3 = new JSChart('graph3', 'line');
+	var cG1 = new Array(NC);
+	for(var j = 1; j<= N ; j++){
+			cG1[j-1] = [j, Yij(1,j)*V(j) ];
+		}
+	var cG2 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG2[j-1] = [j, Yij(2,j)*V(j)  ];
+		}
+	var cG3 = new Array(NC);
+	for(var j = 1; j<= N ; j++){
+		cG3[j-1] = [j, Yij(3,j)*V(j)  ];
+	}
+	var cG4 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG4[j-1] = [j, Yij(4,j) *V(j) ];
+		}
+	var cG5 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG5[j-1] = [j, Yij(5,j)*V(j)  ];
+		}
+	var cG6 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG6[j-1] = [j, Yij(6,j)*V(j)  ];
+		}
+	
+	
+	myChart3.setDataArray( cG1, colores[0]);
+	myChart3.setDataArray( cG2, colores[1]);
+	myChart3.setDataArray( cG3, colores[2]);	
+	myChart3.setDataArray( cG4, colores[3]);
+	myChart3.setDataArray( cG5, colores[4]);
+	myChart3.setDataArray( cG6, colores[5]);
+	
+	myChart3.setSize(900, 400);
+	myChart3.setAxisValuesNumberY(5);
+	myChart3.setIntervalStartY(0);
+	myChart3.setIntervalEndY(350);
+	myChart3.setLabelX([1,'1']);
+	myChart3.setLabelX([2,'2']);
+	myChart3.setLabelX([3,'3']);
+	myChart3.setLabelX([4,'4']);
+	myChart3.setLabelX([5,'5']);
+	myChart3.setLabelX([6,'6']);
+	myChart3.setAxisValuesNumberX(6);
+	myChart3.setShowXValues(false);
+	myChart3.setTitleColor('#454545');
+	myChart3.setAxisNameX('Etapa');
+	myChart3.setAxisNameY('V');
+	myChart3.setTitle('Flujo de gas [lb-mol /h]');
+	myChart3.setAxisValuesColor('#454545');
+	myChart3.setLineColor('#A4D314', 'green');
+	myChart3.setLineColor('#BBBBBB', 'gray');
+	myChart3.setLineColor('#FFC0CB', 'pink');
+	myChart3.setLineColor('#0000FF', 'blue');
+	myChart3.setLineColor('#FF00FF', 'magenta');
+	myChart3.setLineColor('#808000', 'olive');
+	
+	
+	myChart3.setTooltip([1,' ']);
+	myChart3.setTooltip([2,' ']);
+	myChart3.setTooltip([3,' ']);
+	myChart3.setTooltip([4,' ']);
+	myChart3.setTooltip([5,' ']);
+	myChart3.setTooltip([6,' ']);
+	myChart3.setTooltip([7,' ']);
+	myChart3.setTooltip([8,' ']);
+	myChart3.setTooltip([9,' ']);
+	myChart3.setTooltip([10,' ']);
+	myChart3.setFlagColor('#9D16FC');
+	myChart3.setFlagRadius(0);
+	myChart3.setAxisPaddingRight(100);
+	myChart3.setLegendShow(true);
+	myChart3.setLegendPosition(490, 80);
+	myChart3.setLegendForLine('blue', componente[1]);
+	myChart3.setLegendForLine('green', componente[2]);
+	myChart3.setLegendForLine('gray', componente[3]);
+	myChart3.setLegendForLine('olive', componente[4]);
+	myChart3.setLegendForLine('pink', componente[5]);
+	myChart3.setLegendForLine('magenta', componente[6]);
+	
+	myChart3.draw();
+	
+	//Flujo de liquido en funcion del No. de etapa
+	var colores = ["blue","green","gray","olive","pink","magenta"];
+	var myChart4 = new JSChart('graph4', 'line');
+	var cG1 = new Array(NC);
+	
+	for(var j = 1; j<= N ; j++){
+			cG1[j-1] = [j, Xij(1,j)*Lj(j) ];
+		}
+	var cG2 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG2[j-1] = [j, Xij(2,j)*Lj(j)  ];
+		}
+	var cG3 = new Array(NC);
+	for(var j = 1; j<= N ; j++){
+		cG3[j-1] = [j, Xij(3,j)*Lj(j)  ];
+	}
+	var cG4 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG4[j-1] = [j, Xij(4,j) *Lj(j) ];
+		}
+	var cG5 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG5[j-1] = [j, Xij(5,j)*Lj(j)  ];
+		}
+	var cG6 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG6[j-1] = [j, Xij(6,j)*Lj(j)  ];
+		}
+	
+	
+	myChart4.setDataArray( cG1, colores[0]);
+	myChart4.setDataArray( cG2, colores[1]);
+	myChart4.setDataArray( cG3, colores[2]);	
+	myChart4.setDataArray( cG4, colores[3]);
+	myChart4.setDataArray( cG5, colores[4]);
+	myChart4.setDataArray( cG6, colores[5]);
+	
+	
+	myChart4.setSize(900, 400);
+	myChart4.setAxisValuesNumberY(5);
+	myChart4.setIntervalStartY(0);
+	myChart4.setIntervalEndY(170);
+	myChart4.setLabelX([1,'1']);
+	myChart4.setLabelX([2,'2']);
+	myChart4.setLabelX([3,'3']);
+	myChart4.setLabelX([4,'4']);
+	myChart4.setLabelX([5,'5']);
+	myChart4.setLabelX([6,'6']);
+	myChart4.setAxisValuesNumberX(6);
+	myChart4.setShowXValues(false);
+	myChart4.setTitleColor('#454545');
+	myChart4.setAxisNameX('Etapa');
+	myChart4.setAxisNameY('L');
+	myChart4.setTitle('Flujo de liquido [lb-mol /h]');
+	myChart4.setAxisValuesColor('#454545');
+	
+	myChart4.setLineColor('#A4D314', 'green');
+	myChart4.setLineColor('#BBBBBB', 'gray');
+	myChart4.setLineColor('#FFC0CB', 'pink');
+	myChart4.setLineColor('#0000FF', 'blue');
+	myChart4.setLineColor('#FF00FF', 'magenta');
+	myChart4.setLineColor('#808000', 'olive');
+	
+	myChart4.setTooltip([1,' ']);
+	myChart4.setTooltip([2,' ']);
+	myChart4.setTooltip([3,' ']);
+	myChart4.setTooltip([4,' ']);
+	myChart4.setTooltip([5,' ']);
+	myChart4.setTooltip([6,' ']);
+	myChart4.setTooltip([7,' ']);
+	myChart4.setTooltip([8,' ']);
+	myChart4.setTooltip([9,' ']);
+	myChart4.setTooltip([10,' ']);
+	myChart4.setFlagColor('#9D16FC');
+	myChart4.setFlagRadius(0);
+	myChart4.setAxisPaddingRight(100);
+	myChart4.setLegendShow(true);
+	myChart4.setLegendPosition(490, 80);
+	myChart4.setLegendForLine('blue', componente[1]);
+	myChart4.setLegendForLine('green', componente[2]);
+	myChart4.setLegendForLine('gray', componente[3]);
+	myChart4.setLegendForLine('olive', componente[4]);
+	myChart4.setLegendForLine('pink', componente[5]);
+	myChart4.setLegendForLine('magenta', componente[6]);
+	
+	myChart4.draw();
+	
+	//Temperatura en funcion del No. de etapa
+	var colores = ["blue","green","gray","olive","pink","magenta"];
+	var myChart5 = new JSChart('graph5', 'line');
+	var cG1 = new Array(NC);
+		for(var j = 1; j<= N ; j++){
+			cG1[j-1] = [j, T(j) ];
+		}
+	
+	
+	myChart5.setDataArray( cG1, colores[0]);
+	
+	
+	myChart5.setSize(900, 400);
+	myChart5.setAxisValuesNumberY(5);
+	myChart5.setIntervalStartY(140);
+	myChart5.setIntervalEndY(165);
+	myChart5.setLabelX([1,'1']);
+	myChart5.setLabelX([2,'2']);
+	myChart5.setLabelX([3,'3']);
+	myChart5.setLabelX([4,'4']);
+	myChart5.setLabelX([5,'5']);
+	myChart5.setLabelX([6,'6']);
+	myChart5.setAxisValuesNumberX(6);
+	myChart5.setShowXValues(false);
+	myChart5.setTitleColor('#454545');
+	myChart5.setAxisNameX('Etapa');
+	myChart5.setAxisNameY('T');
+	myChart5.setTitle('Temperatura [°F]');
+	myChart5.setAxisValuesColor('#454545');
+	
+	myChart5.setLineColor('#0000FF', 'blue');
+	
+	myChart5.setTooltip([1,' ']);
+	myChart5.setTooltip([2,' ']);
+	myChart5.setTooltip([3,' ']);
+	myChart5.setTooltip([4,' ']);
+	myChart5.setTooltip([5,' ']);
+	myChart5.setTooltip([6,' ']);
+	myChart5.setTooltip([7,' ']);
+	myChart5.setTooltip([8,' ']);
+	myChart5.setTooltip([9,' ']);
+	myChart5.setTooltip([10,' ']);
+	myChart5.setFlagColor('#9D16FC');
+	myChart5.setFlagRadius(0);
+	myChart5.setAxisPaddingRight(100);
+	myChart5.setLegendShow(true);
+	myChart5.setLegendPosition(490, 80);
+	myChart5.setLegendForLine('blue', 'T [°F]');
+	
+	myChart5.draw();
+//Lineas de pruebas
+//document.writeln(Lj(j-1)*HLj(j-1));// + V(j+1)*HVj(j+1) + F(j)*HFj(j) - Lj(j)*HLj(j) - V(j)*HVj(j);
+
+
+
+
+
+
+</script>
+
+
+
+
+
+
+
+
+
+</body>
+</html>
