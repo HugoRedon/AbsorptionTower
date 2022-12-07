@@ -3,7 +3,7 @@
 <head>
 
 
-<title>Universidad Nacional Autónoma de México</title>
+<title>Universidad Nacional AutÃ³noma de MÃ©xico</title>
 
 <script type="text/javascript" src="jscharts.js"></script>
 
@@ -68,7 +68,7 @@
 	function F(j){
 		return arrayF[j];
 	}
-// recibe el componente y plato y devuelve la coposición de F
+// recibe el componente y plato y devuelve la coposiciÃ³n de F
 	function zij(i,j){
 		if(j == 1){
 			return compInfLiq(i);
@@ -353,13 +353,13 @@
 
 <body>
 <div align ='center'>
-	<h1>Universidad Nacional Autónoma de México </h1>
+	<h1>Universidad Nacional AutÃ³noma de MÃ©xico </h1>
 </div>
 <br>
 <div align = 'left'>
 	Hugo Redon Rivera
 </div>
-<img src= 'torre de absorción.jpg'>
+<img src= 'torre de absorciÃ³n.jpg'>
 <div id="graph">Loading...</div>
 <br><br>
 <div id="graph2">Loading...</div>
@@ -387,12 +387,12 @@
 		/*for(var i = 1; i <= N; i++){
 			arrayT[i] = 90;
 		}	*/
-		arrayT[1] = parseInt(prompt('Estimado inicial T (°C) de la etapa 1',90));
-		arrayT[2] = parseInt(prompt('Estimado inicial T (°C) de la etapa 2',100));
-		arrayT[3] = parseInt(prompt('Estimado inicial T (°C) de la etapa 3',110));
-		arrayT[4] = parseInt(prompt('Estimado inicial T (°C) de la etapa 4',120));
-		arrayT[5] = parseInt(prompt('Estimado inicial T (°C) de la etapa 5',130));
-		arrayT[6] = parseInt(prompt('Estimado inicial T (°C) de la etapa 6',140));
+		arrayT[1] = parseInt(prompt('Estimado inicial T (Â°C) de la etapa 1',90));
+		arrayT[2] = parseInt(prompt('Estimado inicial T (Â°C) de la etapa 2',100));
+		arrayT[3] = parseInt(prompt('Estimado inicial T (Â°C) de la etapa 3',110));
+		arrayT[4] = parseInt(prompt('Estimado inicial T (Â°C) de la etapa 4',120));
+		arrayT[5] = parseInt(prompt('Estimado inicial T (Â°C) de la etapa 5',130));
+		arrayT[6] = parseInt(prompt('Estimado inicial T (Â°C) de la etapa 6',140));
 // V inicializa a 100 todas los flujos V		
 	var arrayV = new Array(N + 1);
 		/*for(var i = 1; i <= N ; i++){
@@ -533,7 +533,7 @@
 				arrayD[i][j] = Dij(i,j);
 			}
 		}
-// Método de Thomas
+// MÃ©todo de Thomas
 	//calcula la matriz P, no hay P en el plato 6!!!!!!! y es cero en el plato "cero"....
 			for (var i = 1 ; i <= NC ; i++){
 				arrayP[i][0] = 0;
@@ -691,7 +691,7 @@
 	}while( criterio > 0.0001);
 	
 	
-	// Publicación de resultados
+	// PublicaciÃ³n de resultados
 //Publica criterio de convergencia y numero de iteraciones
 	document.writeln("<table align = 'center' valign = 'middle' frame = box>");
 	document.write("<tr bgcolor = '4682B4' >");
@@ -707,7 +707,7 @@
 	
 // publica matriz "Vnueva","Tnueva","DifTemp"
 var matriz1 = ["F","V","L","T"];
-var unidad = ["[lb-mol / h]","[lb-mol / h]","[lb-mol / h]","[°F]"];
+var unidad = ["[lb-mol / h]","[lb-mol / h]","[lb-mol / h]","[Â°F]"];
 var componente = [,"Metano","Etano","Propano","n-Butano","n-Pentano","Aceite Absorbente"];
 
 document.writeln("<table align = 'center' valign = 'middle' frame = box>");
@@ -763,7 +763,7 @@ document.writeln("</table >");
 
 // publica matriz "PE","QE","AEj","BEj","GEj","HEj"
 var matriz2 = ["PE","QE","AEj","BEj","GEj","HEj","DifTemp"];
-var unidad3 = ["","","[Btu / h °F]","[Btu / h °F]","[Btu / h °F]","[Btu/h]","[°F]"];
+var unidad3 = ["","","[Btu / h Â°F]","[Btu / h Â°F]","[Btu / h Â°F]","[Btu/h]","[Â°F]"];
 
 document.writeln("<table align = 'center' valign = 'middle' frame = box>");
 
@@ -788,7 +788,7 @@ document.writeln("</table >");
 // Publica propiedades HLj HVj HFj DHvj DHlj kij
 
 var matriz3 = ["HLj","HVj","HFj","DHvj","DHlj"];
-var unidad4 = ["[Btu/ lb-mol]","[Btu/ lb-mol]","[Btu/ lb-mol]","[Btu/ °F lb-mol]","[Btu/ °F lb-mol]"];
+var unidad4 = ["[Btu/ lb-mol]","[Btu/ lb-mol]","[Btu/ lb-mol]","[Btu/ Â°F lb-mol]","[Btu/ Â°F lb-mol]"];
 
 document.writeln("<table align = 'center' valign = 'middle' frame = box>");
 
@@ -814,7 +814,7 @@ document.writeln("</table >");
 
 //Graficos
 
-//composición en la fase liquida
+//composiciÃ³n en la fase liquida
 	var colores = ["blue","green","gray","olive","pink","magenta"];
 	var myChart = new JSChart('graph', 'line');
 	var cG1 = new Array(NC);
@@ -864,7 +864,7 @@ document.writeln("</table >");
 	myChart.setTitleColor('#454545');
 	myChart.setAxisNameX('Etapa');
 	myChart.setAxisNameY('X');
-	myChart.setTitle('Composición en la fase líquida');
+	myChart.setTitle('ComposiciÃ³n en la fase lÃ­quida');
 	myChart.setAxisValuesColor('#454545');
 	myChart.setLineColor('#A4D314', 'green');
 	myChart.setLineColor('#BBBBBB', 'gray');
@@ -895,7 +895,7 @@ document.writeln("</table >");
 	myChart.setLegendForLine('magenta', componente[6]);
 	myChart.draw();
 	
-//composición en la fase gas
+//composiciÃ³n en la fase gas
 	var colores = ["blue","green","gray","olive","pink","magenta"];
 	var myChart2 = new JSChart('graph2', 'line');
 	var cG1 = new Array(NC);
@@ -945,7 +945,7 @@ document.writeln("</table >");
 	myChart2.setTitleColor('#454545');
 	myChart2.setAxisNameX('Etapa');
 	myChart2.setAxisNameY('Y');
-	myChart2.setTitle('Composición en la fase gas');
+	myChart2.setTitle('ComposiciÃ³n en la fase gas');
 	myChart2.setAxisValuesColor('#454545');
 	myChart2.setLineColor('#A4D314', 'green');
 	myChart2.setLineColor('#BBBBBB', 'gray');
@@ -1175,7 +1175,7 @@ document.writeln("</table >");
 	myChart5.setTitleColor('#454545');
 	myChart5.setAxisNameX('Etapa');
 	myChart5.setAxisNameY('T');
-	myChart5.setTitle('Temperatura [°F]');
+	myChart5.setTitle('Temperatura [Â°F]');
 	myChart5.setAxisValuesColor('#454545');
 	
 	myChart5.setLineColor('#0000FF', 'blue');
@@ -1195,7 +1195,7 @@ document.writeln("</table >");
 	myChart5.setAxisPaddingRight(100);
 	myChart5.setLegendShow(true);
 	myChart5.setLegendPosition(490, 80);
-	myChart5.setLegendForLine('blue', 'T [°F]');
+	myChart5.setLegendForLine('blue', 'T [Â°F]');
 	
 	myChart5.draw();
 //Lineas de pruebas
